@@ -1,0 +1,22 @@
+stages:
+  - build
+build:
+  stage: build
+  when: on_success
+  only:
+    - main
+  image: registry.gitlab.com/gdunstone/docker-buildx-qemu
+  services:
+    - name: docker:dind
+      entrypoint: ["env", "-u", "DOCKER_HOST"]
+      command: ["dockerd-entrypoint.sh"]
+  variables:
+    DOCKER_HOST: tcp://docker:2375/
+    DOCKER_DRIVER: overlay2
+    DOCKER_TLS_CERTDIR: ""
+  before_script:
+    - docker login -u caudil -p $CI_TOKEN registry.gitlab.com
+    - docker buildx create --driver docker-container --use
+    - docker buildx inspect --bootstrap
+  script:
+    - docker buildx build --platform linux/arm64 --push --build-arg API_URL=$API_URL -t registry.gitlab.com/kasihsolusi/monalease-backend .
